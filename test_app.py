@@ -1,3 +1,16 @@
+"""
+Automated tests for the mock FastAPI service.
+
+Covers:
+- Happy flows (200/201)
+- Validation errors (400)
+- Not found (404)
+- Simulated internal server error (500)
+
+Each test is tagged with a TC-XXX ID that corresponds to the test plan.
+"""
+
+
 import pytest
 from fastapi.testclient import TestClient
 from app import app, item_db
@@ -6,7 +19,7 @@ from app import app, item_db
 client = TestClient(app)
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse=True) 
 def clear_db():
     """
     This fixture runs automatically before each test.
@@ -114,6 +127,26 @@ def test_tc012_negative_quantity():
     response = client.post("/items", json={"name": "Apples", "quantity": -5})
     assert response.status_code == 400
     assert response.json()["detail"] == "Quantity must be >= 1"
+
+# TC-013 – Invalid / non-JSON body
+def test_tc013_invalid_non_json_body():
+    
+    response = client.post(
+        "/items",
+        data="this is not json",
+        headers={"Content-Type": "application/json"},
+    )
+
+    assert response.status_code == 400
+
+    body = response.json()
+    assert body["detail"] == "Invalid request payload"
+    assert "errors" in body
+    assert isinstance(body["errors"], list)
+    assert len(body["errors"]) > 0
+
+
+
 
 
 # TC-014 – Update existing item at valid index
